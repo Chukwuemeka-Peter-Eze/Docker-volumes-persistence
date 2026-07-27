@@ -151,24 +151,6 @@ This project demonstrates practical experience with:
 
 ---
 
-# Architecture Diagram
-
-The following diagram illustrates how Docker separates application data from the container lifecycle by storing data in a Docker-managed volume.
-
-> **Note:** Replace the placeholder image below with your Draw.io architecture diagram after creating it.
-
-```text
-images/architecture.png
-```
-
-<p align="center">
-
-![Docker Volumes Architecture](images/architecture.png)
-
-</p>
-
----
-
 # High-Level Workflow
 
 This project follows a simple workflow to demonstrate persistent storage.
@@ -211,13 +193,12 @@ docker-volumes-persistence/
 ├── LICENSE
 ├── .gitignore
 │
-├── architecture/
-│   └── architecture.drawio
-│
 ├── docs/
+|   ├── commands.md
 │   ├── setup.md
 │   ├── troubleshooting.md
-│   └── lessons-learned.md
+│   |── lessons-learned.md
+|   |── video-script.md
 │
 ├── images/
 │   ├── architecture.png
@@ -231,9 +212,6 @@ docker-volumes-persistence/
 │   ├── bind-mount.png
 │   └── cleanup.png
 │
-├── commands.md
-│
-└── video-script.md
 ```
 
 ---
@@ -276,13 +254,11 @@ The project was completed using the following environment.
 |-----------|-------|
 | Host Environment | Local Development Machine |
 | Container Platform | Docker Desktop (or Docker Engine) |
-| Operating System | Your Local Operating System |
+| Operating System | Windows Operating System |
 | Storage | Docker Volumes |
 | Alternative Storage | Bind Mounts |
 | Version Control | Git |
 | Repository Hosting | GitHub |
-
-> **Tip:** Replace **"Your Local Operating System"** with the operating system you actually used (for example, Windows 11, Ubuntu 24.04 LTS, or macOS).
 
 ---
 
@@ -376,7 +352,7 @@ You can verify that the volume was created successfully by listing all available
 
 ---
 
-## Screenshot — Creating the Volume
+## Image: Creating the Volume
 
 ```text
 images/volume-create.png
@@ -409,7 +385,7 @@ Listing volumes confirms that Docker successfully created the persistent storage
 
 ---
 
-## Screenshot — Listing Volumes
+## Image: Listing Volumes
 
 ```text
 images/volume-list.png
@@ -443,7 +419,7 @@ This command is useful when troubleshooting storage issues or locating where Doc
 
 ---
 
-## Screenshot — Volume Inspection
+## Image: Volume Inspection
 
 ```text
 images/volume-inspect.png
@@ -479,7 +455,7 @@ Any files written to `/data` are stored inside the Docker volume rather than ins
 
 ---
 
-## Screenshot — Container with Mounted Volume
+## Image: Container with Mounted Volume
 
 ```text
 images/container-with-volume.png
@@ -517,7 +493,7 @@ Because the file is stored inside the mounted volume, it is no longer tied to th
 
 ---
 
-## Screenshot — Creating Data
+## Image: Creating Data
 
 ```text
 images/data-created.png
@@ -545,7 +521,7 @@ This demonstrates that volumes and containers have separate lifecycles.
 
 ---
 
-## Screenshot — Container Removed
+## Image: Container Removed
 
 ```text
 images/container-removed.png
@@ -588,7 +564,7 @@ This confirms that the data is stored in the Docker volume rather than inside th
 
 ---
 
-## Screenshot — Persistent Data Verified
+## Image: Persistent Data Verified
 
 ```text
 images/data-persisted.png
@@ -626,7 +602,7 @@ Bind mounts are commonly used for:
 
 ---
 
-## Screenshot — Bind Mount
+## Image: Bind Mount
 
 ```text
 images/bind-mount.png
@@ -768,7 +744,7 @@ This information is especially useful when troubleshooting storage-related issue
 
 ---
 
-# Screenshot Gallery
+# Image Gallery
 
 Replace each placeholder with the corresponding screenshot from your implementation.
 
