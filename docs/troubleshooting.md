@@ -1,86 +1,72 @@
 # Troubleshooting Guide
 
-This document provides a structured approach to diagnosing and resolving common issues encountered while working with Docker volumes and persistent storage.
+This document provides solutions to common issues that may occur while working with Docker volumes and bind mounts.
 
-The project focuses on:
-
-- Docker Volumes
-- Persistent Storage
-- Bind Mounts
-- Container Lifecycle
-- Volume Lifecycle
+The goal is to help identify problems quickly, understand why they occur, and apply the correct solution.
 
 ---
 
-# Table of Contents
-
-- Troubleshooting Workflow
-- Docker Volume Not Found
-- Volume Mount Issues
-- Data Not Persisting
-- Permission Issues
-- Bind Mount Problems
-- Container Cannot Access Files
-- Volume Removal Errors
-- Inspecting Volumes
-- Storage Cleanup
-- Useful Commands
-- Troubleshooting Checklist
-- Best Practices
-
----
-
-# Troubleshooting Workflow
-
-Always troubleshoot methodically.
-
-```text
-Problem Detected
-        │
-        ▼
-Read Error Message
-        │
-        ▼
-Verify Docker Engine
-        │
-        ▼
-Verify Volume Exists
-        │
-        ▼
-Inspect Volume
-        │
-        ▼
-Verify Mount Configuration
-        │
-        ▼
-Inspect Container
-        │
-        ▼
-Verify Stored Data
-        │
-        ▼
-Apply Fix
-        │
-        ▼
-Retest
-```
-
----
-
-# Issue 1 — Docker Volume Does Not Exist
+# Issue 1 — Data Is Lost After Recreating a Container
 
 ## Symptoms
 
+- Files created inside the container are missing.
+- Application data disappears after removing the container.
+- Expected files cannot be found after starting a new container.
+
+## Possible Causes
+
+- Data was written to the container's writable filesystem instead of the mounted volume.
+- The Docker volume was not mounted correctly.
+- An incorrect mount path was specified.
+
+## How to Verify
+
+Inspect the container.
+
+```bash
+docker inspect demo-container
+```
+
+Review the **Mounts** section and confirm that the expected Docker volume is attached.
+
+Inside the container, verify where the file was created.
+
+```bash
+pwd
+
+ls /data
+```
+
+## Resolution
+
+- Ensure the volume is mounted correctly.
+- Write application data only inside the mounted directory.
+- Recreate the container if necessary using the correct volume mapping.
+
+---
+
+# Issue 2 — Docker Volume Does Not Exist
+
+## Symptoms
+
+Running the following command returns an error:
+
+```bash
+docker volume inspect my-volume
+```
+
+Example:
+
 ```text
-Error response from daemon:
-volume not found
+Error: No such volume: my-volume
 ```
 
 ## Possible Causes
 
-- Incorrect volume name
-- Typographical error
-- Volume was deleted
+- The volume was never created.
+- The volume name is incorrect.
+- A typographical error was made.
 
 ## Resolution
 
@@ -90,83 +76,27 @@ List all available volumes.
 docker volume ls
 ```
 
-Inspect the required volume.
+If the expected volume is missing, create it.
 
 ```bash
-docker volume inspect project-data
-```
-
-If the volume does not exist, recreate it.
-
-```bash
-docker volume create project-data
+docker volume create my-volume
 ```
 
 ---
 
-# Issue 2 — Data Does Not Persist
+# Issue 3 — Unable to Remove a Docker Volume
 
 ## Symptoms
 
-Files disappear after deleting the container.
-
-## Possible Causes
-
-- Data stored inside the container instead of the mounted volume.
-- Wrong mount path.
-- Volume was never attached.
-
-## Resolution
-
-Inspect the container.
+Running:
 
 ```bash
-docker inspect demo-container
+docker volume rm my-volume
 ```
 
-Verify the **Mounts** section.
+returns an error indicating that the volume is still in use.
 
-Ensure the application writes data to the mounted directory rather than another location.
-
----
-
-# Issue 3 — Incorrect Mount Path
-
-## Symptoms
-
-Files are not visible inside the mounted directory.
-
-## Possible Causes
-
-- Wrong destination path
-- Typographical error
-- Incorrect application configuration
-
-## Resolution
-
-Review the container configuration.
-
-```bash
-docker inspect demo-container
-```
-
-Confirm:
-
-- Volume name
-- Destination path
-- Mount type
-
----
-
-# Issue 4 — Volume Cannot Be Removed
-
-## Symptoms
-
-```text
-volume is in use
-```
-
-## Possible Causes
+## Possible Cause
 
 A running or stopped container is still attached to the volume.
 
@@ -178,130 +108,148 @@ List all containers.
 docker ps -a
 ```
 
-Remove the dependent container.
+Inspect the containers if necessary.
 
 ```bash
-docker rm -f demo-container
+docker inspect <container-name>
+```
+
+Remove any container using the volume.
+
+```bash
+docker rm -f <container-name>
 ```
 
 Retry removing the volume.
 
 ```bash
-docker volume rm project-data
+docker volume rm my-volume
 ```
 
 ---
 
-# Issue 5 — Permission Denied
+# Issue 4 — Bind Mount Is Not Working
 
 ## Symptoms
 
-```text
-Permission denied
-```
+- Files from the host are not visible inside the container.
+- Changes made on the host are not reflected in the container.
 
 ## Possible Causes
 
-- Linux file permissions
-- Application user lacks write access
-- Host directory permissions
+- Incorrect host directory.
+- Typographical error in the mount path.
+- The directory does not exist.
+- Docker does not have permission to access the directory.
 
 ## Resolution
 
-Verify permissions inside the container.
+Verify that the directory exists.
+
+Example:
 
 ```bash
-ls -l
+ls /path/to/local/folder
 ```
 
-Review ownership and permissions before restarting the application.
+Restart the container using the correct path.
 
 ---
 
-# Issue 6 — Bind Mount Not Working
+# Issue 5 — Container Fails to Start
 
 ## Symptoms
 
-Host files are not visible inside the container.
+The container exits immediately after starting.
 
-## Possible Causes
-
-- Incorrect host path
-- Directory does not exist
-- Permission issues
-
-## Resolution
-
-Verify the host directory.
+Check its status.
 
 ```bash
-ls /home/ubuntu/project
+docker ps -a
 ```
 
-Restart the container after correcting the mount path.
+View the logs.
 
----
-
-# Issue 7 — Container Cannot Access Mounted Files
-
-## Symptoms
-
-Application cannot read or write files.
+```bash
+docker logs demo-container
+```
 
 ## Possible Causes
 
-- Wrong mount destination
-- Read-only mount
-- Incorrect permissions
+- Invalid image name.
+- Incorrect command.
+- Application startup failure.
+- Volume mounted to an unexpected location.
 
 ## Resolution
 
-Inspect the container.
+Review the error logs and verify:
+
+- Image name
+- Container command
+- Mount destination
+- Volume configuration
+
+---
+
+# Issue 6 — Cannot Access Files Inside the Volume
+
+## Symptoms
+
+The mounted directory exists, but expected files are missing.
+
+## Possible Causes
+
+- Files were created outside the mounted directory.
+- A different volume was mounted.
+- The wrong container is being inspected.
+
+## Resolution
+
+Verify the mounted directory.
 
 ```bash
 docker inspect demo-container
 ```
 
-Review the **Mounts** section and verify that the mount is writable.
+Check the contents.
 
----
+```bash
+ls /data
+```
 
-# Issue 8 — Volume Not Listed
-
-## Symptoms
-
-Expected volume is missing.
-
-## Possible Causes
-
-- Volume removed
-- Incorrect Docker context
-- Typographical error
-
-## Resolution
-
-Display all volumes.
+Confirm the correct volume.
 
 ```bash
 docker volume ls
 ```
 
-If necessary, recreate the volume.
-
 ---
 
-# Issue 9 — Storage Consuming Too Much Space
+# Issue 7 — Docker Storage Consumes Too Much Disk Space
 
 ## Symptoms
 
-Docker storage usage continues to grow.
+Docker uses a large amount of local storage.
 
 ## Resolution
 
-Display Docker disk usage.
+View Docker disk usage.
 
 ```bash
 docker system df
+```
+
+Remove unused containers.
+
+```bash
+docker container prune
+```
+
+Remove unused images.
+
+```bash
+docker image prune
 ```
 
 Remove unused volumes.
@@ -310,90 +258,47 @@ Remove unused volumes.
 docker volume prune
 ```
 
-Remove unused Docker resources.
-
-```bash
-docker system prune
-```
+> **Warning:** These cleanup commands permanently remove unused Docker resources. Review them carefully before proceeding.
 
 ---
 
-# Inspecting Docker Volumes
+# General Troubleshooting Checklist
 
-Inspect detailed volume information.
+When diagnosing Docker volume issues, verify the following:
 
-```bash
-docker volume inspect project-data
-```
-
-Review:
-
-- Driver
-- Mount point
-- Scope
-- Labels
+- Docker is running.
+- The correct volume name is being used.
+- The volume exists.
+- The container is running.
+- The volume is mounted correctly.
+- Data is written inside the mounted directory.
+- The correct container is being inspected.
+- Docker has permission to access any bind-mounted directories.
 
 ---
 
-# Inspecting Container Mounts
-
-Inspect the running container.
-
-```bash
-docker inspect demo-container
-```
-
-Verify:
-
-- Mounted volume
-- Destination
-- Mount type
-- Read/write status
-
----
-
-# Useful Diagnostic Commands
+# Helpful Diagnostic Commands
 
 | Command | Purpose |
 |----------|---------|
-| `docker volume ls` | List Docker volumes |
-| `docker volume inspect` | Inspect a volume |
-| `docker inspect` | Inspect container mounts |
 | `docker ps` | View running containers |
-| `docker system df` | Display Docker storage usage |
-| `docker volume prune` | Remove unused volumes |
-| `docker system prune` | Clean Docker resources |
+| `docker ps -a` | View all containers |
+| `docker volume ls` | List Docker volumes |
+| `docker volume inspect <volume>` | Inspect a volume |
+| `docker inspect <container>` | Inspect a container |
+| `docker logs <container>` | View container logs |
+| `docker system df` | Display Docker disk usage |
 
 ---
 
-# Troubleshooting Checklist
+# Key Takeaways
 
-Before concluding the project is functioning correctly, verify the following:
+Most Docker volume issues fall into one of the following categories:
 
-- Docker Engine is running.
-- Volume exists.
-- Volume is mounted correctly.
-- Data is written to the mounted directory.
-- Data persists after container removal.
-- Bind mount functions correctly.
-- Storage usage is within expected limits.
-- No critical errors appear during execution.
+- Incorrect volume configuration
+- Incorrect mount path
+- Data written outside the mounted directory
+- Containers still using a volume
+- Typographical errors in Docker commands
 
----
-
-# Best Practices
-
-- Use named Docker volumes for persistent application data.
-- Store application data outside the container filesystem.
-- Use bind mounts primarily for development workflows.
-- Verify mounted volumes before troubleshooting applications.
-- Use descriptive volume names.
-- Remove unused volumes periodically.
-- Back up important persistent data before cleanup.
-- Document storage architecture alongside deployment documentation.
-
----
-
-# Conclusion
-
-Persistent storage is a critical component of stateful containerized applications. Docker volumes provide a reliable mechanism for preserving data beyond the lifecycle of individual containers, while bind mounts offer flexibility for development workflows. By following a structured troubleshooting process, inspecting volumes and mounts, and understanding the separation between container and storage lifecycles, most storage-related issues can be diagnosed and resolved efficiently.
+A structured troubleshooting approach—checking the volume, the container, and the mount configuration—will resolve the majority of storage-related issues.

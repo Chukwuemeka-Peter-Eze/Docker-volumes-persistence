@@ -1,320 +1,180 @@
-# Project Demonstration Video Script
-
-**Project:** Docker Volumes for Persistent Data Storage on AWS
-
-**Target Duration:** 8–10 Minutes
-
-**Audience**
-
-- Recruiters
-- Hiring Managers
-- DevOps Engineers
-- Cloud Engineers
-- Platform Engineers
-- Site Reliability Engineers (SREs)
+# Docker Volumes for Persistent Data Storage
+## Project Walkthrough Script
 
 ---
 
-# Video Objective
+# Introduction
 
-The objective of this demonstration is to showcase how Docker volumes provide persistent storage for containerized applications.
+Hello, and welcome to my Docker Volumes project.
 
-This project demonstrates:
+In this project, I explored one of Docker's most important concepts: **persistent storage**.
 
-- Creating Docker volumes
-- Mounting persistent storage
-- Writing application data
-- Removing containers
-- Reusing existing volumes
-- Verifying data persistence
-- Comparing Docker volumes with bind mounts
+Containers are designed to be lightweight and disposable, but many real-world applications need to retain data even when containers are stopped, removed, or recreated.
 
-The demonstration emphasizes that application data should remain available even when containers are replaced.
+The goal of this project was to understand how Docker Volumes solve this challenge by separating application data from the container lifecycle.
+
+Throughout this walkthrough, I'll explain what I built, why it matters, and the key concepts I learned.
 
 ---
 
-# Scene 1 — Introduction (45 seconds)
+# Project Objectives
 
-### Screen
+The primary objectives of this project were to:
 
-Open the GitHub repository homepage.
-
-### Narration
-
-> Hello everyone, and welcome.
-
-> In this project, I demonstrate how Docker volumes provide persistent storage for containerized applications running on AWS.
-
-> One of the limitations of containers is that they are designed to be ephemeral. Docker volumes solve this problem by separating application data from the container lifecycle.
-
-> Throughout this project, I documented the implementation process, architecture, storage concepts, troubleshooting techniques, and engineering lessons learned.
+- Understand Docker's storage architecture.
+- Learn how Docker Volumes work.
+- Create and manage Docker Volumes.
+- Mount a volume into a container.
+- Verify that data persists after container removal.
+- Compare Docker Volumes with bind mounts.
+- Practice common Docker storage commands.
 
 ---
 
-# Scene 2 — Repository Overview (1 minute)
+# Why Persistent Storage Matters
 
-### Screen
+One of the first things I learned is that containers are ephemeral.
 
-Scroll through the repository.
+When a container is removed, everything stored only inside that container is also removed.
 
-Highlight:
+This behavior is intentional because containers are designed to be replaceable.
 
-- README
-- Commands Guide
-- Setup Guide
-- Troubleshooting Guide
-- Lessons Learned
-- Architecture Diagram
+However, many applications generate important data, such as:
 
-### Narration
+- Database records
+- Uploaded files
+- Application logs
+- User-generated content
 
-> This repository is organized to make the implementation easy to reproduce.
+Losing this information whenever a container is replaced would not be practical.
 
-> It contains detailed documentation explaining Docker storage architecture, persistent storage concepts, setup procedures, troubleshooting steps, and operational best practices.
+Docker Volumes solve this problem by storing data outside the container itself.
 
 ---
 
-# Scene 3 — Architecture Diagram (1 minute)
+# What Is a Docker Volume?
 
-### Screen
+A Docker Volume is a Docker-managed storage location.
 
-Open:
+Instead of storing files inside the container's writable filesystem, the application stores them in a mounted volume.
 
-```text
-images/architecture.png
-```
+Because the volume exists independently of the container, the data remains available even after the container has been removed.
 
-Zoom into the architecture.
-
-### Narration
-
-> This architecture demonstrates the relationship between a running container and a Docker volume.
-
-> The container mounts a Docker-managed volume where application data is stored.
-
-> Even if the container is removed, the Docker volume continues to exist independently, allowing a new container to reuse the same data.
+This separation between containers and storage is one of Docker's core design principles.
 
 ---
 
-# Scene 4 — Creating a Docker Volume (1 minute)
+# Project Workflow
 
-### Screen
+The workflow for this project followed these steps:
 
-Run:
+1. Create a Docker Volume.
+2. Verify that the volume exists.
+3. Start a container and mount the volume.
+4. Create a file inside the mounted directory.
+5. Remove the container.
+6. Create a new container using the same volume.
+7. Confirm that the original file is still available.
+
+This simple workflow demonstrates how persistent storage works in Docker.
+
+---
+
+# Demonstration
+
+First, I created a Docker Volume using:
 
 ```bash
-docker volume create project-data
+docker volume create my-volume
 ```
 
-Then:
+Next, I listed all available volumes.
 
 ```bash
 docker volume ls
 ```
 
-### Narration
+Then I inspected the volume to view information such as the driver and mount point.
 
-> Docker volumes are created and managed directly by Docker.
+```bash
+docker volume inspect my-volume
+```
 
-> Listing the available volumes confirms that the new persistent storage has been successfully created.
-
----
-
-# Scene 5 — Running a Container with a Mounted Volume (1 minute)
-
-### Screen
-
-Run:
+After creating the volume, I launched an Nginx container and mounted the volume.
 
 ```bash
 docker run -d \
--v project-data:/usr/share/nginx/html \
---name nginx-volume \
+--name demo-container \
+-v my-volume:/data \
 nginx
 ```
 
-Show:
+Inside the container, I created a file within the mounted directory.
 
 ```bash
-docker inspect nginx-volume
+echo "Docker Volumes Persist Data" > /data/example.txt
 ```
 
-Highlight the **Mounts** section.
-
-### Narration
-
-> This container mounts the Docker volume into its filesystem.
-
-> The mounted directory is where persistent application data will be stored.
-
----
-
-# Scene 6 — Demonstrating Data Persistence (1 minute)
-
-### Screen
-
-Access the container.
-
-Create a file.
+I then removed the container.
 
 ```bash
-echo "Docker Volume Test" > /usr/share/nginx/html/index.html
+docker rm -f demo-container
 ```
 
-Remove the container.
+Finally, I started a new container using the same volume and verified that the file still existed.
 
-```bash
-docker rm -f nginx-volume
-```
-
-Create another container using the same volume.
-
-Display:
-
-```bash
-cat /usr/share/nginx/html/index.html
-```
-
-### Narration
-
-> Although the original container has been removed, the data remains available because it is stored in the Docker volume rather than the container itself.
-
-> This demonstrates one of the most important concepts in containerized applications: separating storage from compute.
+This confirmed that the data was stored in the Docker Volume rather than inside the container itself.
 
 ---
 
-# Scene 7 — Demonstrating Bind Mounts (1 minute)
+# Docker Volumes vs Bind Mounts
 
-### Screen
+Another concept explored during this project was the difference between Docker Volumes and bind mounts.
 
-Run:
+Docker Volumes are managed by Docker and are commonly used for persistent application data.
 
-```bash
-docker run -d \
--v /home/ubuntu/project:/usr/share/nginx/html \
-nginx
-```
+Bind mounts use an existing directory on the host machine and are often preferred during local development because they allow changes on the host to be reflected immediately inside the container.
 
-Show the host directory and the corresponding files inside the container.
-
-### Narration
-
-> Bind mounts provide another way of sharing data by mapping an existing directory from the host into the container.
-
-> They are commonly used during development because changes made on the host are immediately visible inside the container.
+Understanding when to use each approach is important for designing reliable containerized applications.
 
 ---
 
-# Scene 8 — Inspecting Docker Storage (1 minute)
+# Key Lessons Learned
 
-### Screen
+Completing this project reinforced several important concepts.
 
-Run:
+First, containers should be treated as temporary application instances.
 
-```bash
-docker volume inspect project-data
-```
+Second, persistent application data should be stored separately from containers.
 
-Then:
+Third, Docker provides dedicated storage resources that can survive container recreation.
 
-```bash
-docker system df
-```
-
-### Narration
-
-> Docker provides tools for inspecting storage configuration and monitoring disk usage.
-
-> These commands help verify volume configuration and identify unused storage resources.
+I also became more comfortable using Docker CLI commands to create, inspect, and manage storage resources while documenting each step of the implementation.
 
 ---
 
-# Scene 9 — Lessons Learned (1 minute)
+# Future Improvements
 
-### Screen
+There are several ways this project could be extended.
 
-Open the "Lessons Learned" section in the repository.
+Future enhancements include:
 
-### Narration
+- Using Docker Compose with named volumes.
+- Backing up and restoring Docker Volumes.
+- Sharing storage across multiple containers.
+- Exploring third-party volume drivers.
+- Implementing persistent storage in Kubernetes using Persistent Volumes and Persistent Volume Claims.
 
-> This project reinforced several important concepts, including the separation of container and storage lifecycles, the role of Docker volumes in stateful applications, and the differences between Docker volumes and bind mounts.
-
-> It also highlighted the importance of documenting infrastructure and validating persistent storage during deployments.
-
----
-
-# Scene 10 — Conclusion (30–45 seconds)
-
-### Screen
-
-Return to the repository homepage.
-
-### Narration
-
-> Thank you for watching this demonstration.
-
-> This project provides a practical example of implementing persistent storage using Docker volumes on AWS.
-
-> Feedback and suggestions are always welcome. Thank you for your time.
+These topics build directly on the concepts introduced in this project.
 
 ---
 
-# Recording Checklist
+# Conclusion
 
-Before recording, verify the following:
+This project provided practical experience with one of the foundational concepts in containerization.
 
-- Terminal font size is readable.
-- Docker Engine is running.
-- Docker volume created successfully.
-- Volume mounted correctly.
-- Data persistence verified.
-- Bind mount demonstration completed.
-- Architecture diagram added.
-- README updated.
-- Sensitive information removed from the terminal.
-- Screenshots included in the repository.
-- Desktop notifications disabled.
+By creating, mounting, inspecting, and reusing Docker Volumes, I demonstrated how application data can persist independently of the container lifecycle.
 
----
+Understanding persistent storage is essential for building reliable, stateful containerized applications and serves as a strong foundation for more advanced technologies such as Docker Compose and Kubernetes.
 
-# Suggested Repository Assets
-
-Include the following assets to strengthen the repository:
-
-- `architecture.png`
-- Screenshot of volume creation
-- Screenshot of volume list
-- Screenshot of volume inspection
-- Screenshot of mounted container
-- Screenshot showing created data
-- Screenshot after container removal
-- Screenshot proving data persistence
-- Screenshot demonstrating bind mounts
-- Screenshot of cleanup commands
-- Short GIF showing the complete persistence workflow
-- Project thumbnail image
-
----
-
-# Estimated Timeline
-
-| Section | Duration |
-|----------|----------|
-| Introduction | 0:45 |
-| Repository Overview | 1:00 |
-| Architecture | 1:00 |
-| Create Volume | 1:00 |
-| Mount Volume | 1:00 |
-| Data Persistence | 1:00 |
-| Bind Mounts | 1:00 |
-| Storage Inspection | 1:00 |
-| Lessons Learned | 1:00 |
-| Conclusion | 0:30 |
-
-**Total Duration:** Approximately **9–10 minutes**
-
----
-
-# Final Notes
-
-This demonstration should emphasize not only how Docker volumes are created and mounted, but also why persistent storage is essential for stateful applications. Clearly explaining the difference between the lifecycle of a container and the lifecycle of a volume will help showcase your understanding of container storage concepts and practical DevOps workflows. The combination of architecture, live demonstrations, troubleshooting, and documentation provides a comprehensive overview of persistent storage management in Docker.
+Thank you for taking the time to review this project.

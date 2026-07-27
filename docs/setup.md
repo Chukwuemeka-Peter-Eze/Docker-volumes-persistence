@@ -1,235 +1,126 @@
 # Project Setup Guide
 
-This guide provides a step-by-step walkthrough for configuring Docker volumes on an AWS EC2 instance. It covers creating persistent storage, attaching volumes to containers, validating data persistence, and performing cleanup.
+This guide explains how to reproduce the Docker Volumes project on a local development machine.
 
----
+By the end of this guide, you will have:
 
-# Table of Contents
-
-- Solution Architecture
-- Prerequisites
-- AWS Infrastructure
-- Launch EC2 Instance
-- Connect to EC2
-- Install Docker
-- Verify Installation
-- Create Docker Volume
-- Inspect Docker Volume
-- Run Container with Volume
-- Create Test Data
-- Verify Persistent Storage
-- Demonstrate Bind Mounts
-- Cleanup
-- Deployment Checklist
-- Summary
-
----
-
-# Solution Architecture
-
-```text
-Developer
-     │
-     ▼
-GitHub Repository
-     │
-     ▼
-AWS EC2 Instance
-     │
-     ▼
-Ubuntu Linux
-     │
-     ▼
-Docker Engine
-     │
-     ▼
-Docker Volume
-     │
-     ▼
-Running Container
-     │
-     ▼
-Persistent Application Data
-```
-
-The important concept demonstrated throughout this guide is that **Docker volumes remain available even after the associated container has been removed.**
+- Docker installed and running
+- A Docker volume created
+- A container using the volume
+- Persistent data stored in the volume
+- Verified that the data survives container recreation
 
 ---
 
 # Prerequisites
 
-Before beginning, ensure the following are available.
+Ensure the following software is installed before starting.
 
-- AWS Account
-- Ubuntu EC2 Instance
-- SSH Client
-- Docker Engine
-- Git
-- Internet Connection
+| Requirement | Purpose |
+|------------|---------|
+| Docker Desktop (or Docker Engine) | Run containers |
+| Git | Clone the repository |
+| Terminal | Execute Docker commands |
+| Code Editor (Optional) | View and edit project files |
 
----
-
-# AWS Infrastructure
-
-The project was completed using the following resources.
-
-| Component | Description |
-|-----------|-------------|
-| Cloud Provider | Amazon Web Services |
-| Compute | Amazon EC2 |
-| Operating System | Ubuntu Linux |
-| Container Runtime | Docker Engine |
-| Storage | Docker Volumes |
-| Version Control | Git |
-| Repository | GitHub |
-
----
-
-# Step 1 — Launch an EC2 Instance
-
-Create an Ubuntu EC2 instance.
-
-Recommended configuration:
-
-- Ubuntu Server LTS
-- Public IP Enabled
-- SSH Enabled
-- Security Group allowing SSH
-
----
-
-# Step 2 — Connect to the Server
-
-Connect using SSH.
-
-```bash
-ssh -i your-key.pem ubuntu@<EC2-Public-IP>
-```
-
-Verify connectivity before continuing.
-
----
-
-# Step 3 — Update Ubuntu
-
-```bash
-sudo apt update
-
-sudo apt upgrade -y
-```
-
-Keeping packages updated improves compatibility and security.
-
----
-
-# Step 4 — Verify Docker Installation
-
-Confirm Docker is installed.
+Verify Docker is installed.
 
 ```bash
 docker --version
 ```
 
-Display system information.
+Example output:
+
+```text
+Docker version 28.x.x
+```
+
+Verify Docker is running.
 
 ```bash
 docker info
 ```
 
-Ensure the Docker daemon is running correctly.
+If Docker is running successfully, system information will be displayed.
 
 ---
 
-# Step 5 — Create a Docker Volume
+# Clone the Repository
+
+Clone the project from GitHub.
+
+```bash
+git clone https://github.com/your-username/docker-volumes-persistence.git
+```
+
+Navigate into the project directory.
+
+```bash
+cd docker-volumes-persistence
+```
+
+---
+
+# Step 1 — Create a Docker Volume
 
 Create a named volume.
 
 ```bash
-docker volume create project-data
+docker volume create my-volume
 ```
 
-Docker creates and manages the storage location automatically.
-
----
-
-## Screenshot Placeholder
-
-```text
-images/volume-create.png
-```
-
----
-
-# Step 6 — Verify the Volume
-
-List available volumes.
+Verify that the volume exists.
 
 ```bash
 docker volume ls
 ```
 
-Inspect the new volume.
-
-```bash
-docker volume inspect project-data
-```
-
-Review:
-
-- Volume name
-- Driver
-- Mount point
-- Scope
-
----
-
-## Screenshot Placeholder
+Expected output:
 
 ```text
-images/volume-list.png
-```
-
-```text
-images/volume-inspect.png
+DRIVER    VOLUME NAME
+local     my-volume
 ```
 
 ---
 
-# Step 7 — Run a Container with the Volume
+# Step 2 — Start a Container
 
-Create an Nginx container using the volume.
+Run an Nginx container with the Docker volume mounted.
 
 ```bash
 docker run -d \
---name nginx-volume \
--v project-data:/usr/share/nginx/html \
+--name demo-container \
+-v my-volume:/data \
 nginx
 ```
 
-Docker mounts the volume inside the container.
+Verify that the container is running.
 
----
-
-## Screenshot Placeholder
-
-```text
-images/container-with-volume.png
+```bash
+docker ps
 ```
 
 ---
 
-# Step 8 — Create Test Data
+# Step 3 — Create Persistent Data
 
-Access the container.
+Open a shell inside the container.
 
 ```bash
-docker exec -it nginx-volume bash
+docker exec -it demo-container sh
 ```
 
-Create a test file.
+Create a file inside the mounted directory.
 
 ```bash
-echo "Docker Volume Test" > /usr/share/nginx/html/index.html
+echo "Docker Volumes Persist Data" > /data/example.txt
+```
+
+Verify the file.
+
+```bash
+cat /data/example.txt
 ```
 
 Exit the container.
@@ -240,152 +131,142 @@ exit
 
 ---
 
-## Screenshot Placeholder
+# Step 4 — Remove the Container
 
-```text
-images/data-created.png
-```
-
----
-
-# Step 9 — Remove the Container
-
-Delete the container.
+Remove the container.
 
 ```bash
-docker rm -f nginx-volume
+docker rm -f demo-container
 ```
 
-Notice that only the container is removed.
+The container is deleted, but the Docker volume still exists.
 
-The Docker volume remains available.
-
----
-
-## Screenshot Placeholder
-
-```text
-images/container-removed.png
-```
-
----
-
-# Step 10 — Verify Persistent Storage
-
-Create another container using the same volume.
+Verify the volume.
 
 ```bash
-docker run -d \
---name nginx-volume-new \
--v project-data:/usr/share/nginx/html \
-nginx
-```
-
-Access the new container.
-
-```bash
-docker exec -it nginx-volume-new bash
-```
-
-Verify the file.
-
-```bash
-cat /usr/share/nginx/html/index.html
-```
-
-The original data should still exist.
-
----
-
-## Screenshot Placeholder
-
-```text
-images/data-persisted.png
+docker volume ls
 ```
 
 ---
 
-# Step 11 — Demonstrate a Bind Mount
+# Step 5 — Verify Persistent Storage
 
-Run another container using a bind mount.
+Create a new container using the same volume.
+
+```bash
+docker run -it \
+--name verification-container \
+-v my-volume:/data \
+ubuntu bash
+```
+
+List the files.
+
+```bash
+ls /data
+```
+
+Display the contents.
+
+```bash
+cat /data/example.txt
+```
+
+If the file appears, the volume has successfully preserved the data.
+
+Exit the container.
+
+```bash
+exit
+```
+
+---
+
+# Step 6 — Inspect the Volume
+
+View detailed information about the Docker volume.
+
+```bash
+docker volume inspect my-volume
+```
+
+Review the output, including:
+
+- Volume name
+- Driver
+- Mount point
+- Scope
+
+---
+
+# Step 7 — Demonstrate a Bind Mount
+
+Create a bind mount using a directory on your local machine.
+
+Replace `/path/to/local/folder` with a directory that exists on your computer.
 
 ```bash
 docker run -d \
 --name bind-demo \
--v /home/ubuntu/project:/usr/share/nginx/html \
+-v /path/to/local/folder:/app \
 nginx
 ```
 
-This maps an existing host directory directly into the container.
+Verify that changes made in the host directory are visible inside the container.
 
 ---
 
-## Screenshot Placeholder
+# Cleanup
 
-```text
-images/bind-mount.png
-```
-
----
-
-# Step 12 — Cleanup
-
-Remove containers.
+Remove the containers.
 
 ```bash
-docker rm -f nginx-volume-new
+docker rm -f verification-container
+```
 
+```bash
 docker rm -f bind-demo
 ```
 
 Remove the Docker volume.
 
 ```bash
-docker volume rm project-data
+docker volume rm my-volume
 ```
 
-Remove unused volumes.
+Remove any unused volumes.
 
 ```bash
 docker volume prune
 ```
 
-Display Docker storage usage.
-
-```bash
-docker system df
-```
-
 ---
 
-## Screenshot Placeholder
+# Verification Checklist
 
-```text
-images/cleanup.png
-```
+Confirm that you have successfully completed the project.
 
----
-
-# Deployment Verification Checklist
-
-Verify the following before considering the exercise complete.
-
-- Ubuntu EC2 instance running
-- Docker Engine operational
+- Docker installed and running
 - Docker volume created
-- Volume successfully mounted
-- Test data written
+- Container started successfully
+- Volume mounted correctly
+- File created in the mounted directory
 - Container removed
 - New container created
-- Original data still available
-- Bind mount demonstrated
-- Cleanup completed successfully
+- Original file still exists
+- Volume inspected
+- Bind mount tested
 
 ---
 
-# Summary
+# Next Steps
 
-This project demonstrates how Docker volumes provide persistent storage that is independent of the container lifecycle. By creating a volume, mounting it into a container, writing data, removing the container, and reusing the same volume with a new container, the persistence of application data is clearly verified.
+After completing this project, consider exploring the following topics:
 
-Understanding Docker volumes is essential for running stateful applications such as databases, content management systems, and file-based services in containerized environments. This project establishes the practical foundation for more advanced storage concepts used in Docker Compose, Kubernetes Persistent Volumes, and cloud-native infrastructure.
-```
+- Docker Compose volumes
+- Volume backup and restore
+- Named versus anonymous volumes
+- Volume drivers
+- Multi-container applications with shared storage
+- Kubernetes Persistent Volumes (PV)
+- Kubernetes Persistent Volume Claims (PVC)
